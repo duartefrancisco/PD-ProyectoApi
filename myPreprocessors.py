@@ -50,3 +50,30 @@ class Mapper(BaseEstimator, TransformerMixin):
         for variable in self.variables:
             X[variable] = X[variable].map(self.mappings)
         return X
+
+#===========================================================================
+#Clase para tratamiento de outliers
+class OutliersTreatmentOperator(BaseEstimator, TransformerMixin):
+
+    def __init__(self, factor = 1.75, columnas = None):
+        self.columnas = columnas
+        self.factor = factor
+
+    def fit(self, X, y = None):
+        for col in self.columnas:
+            q3 = X[col].quantile(0.75)
+            q1 = X[col].quantile(0.25)
+            self.IQR = q3 - q1
+            self.upper = q3 + self.factor*self.IQR
+            self.lower = q1 - self.factor*self.IQR
+        return self
+
+    def transform(self, X, y = None):
+        X = X.copy()
+        for col in self.columnas:
+            X[col] = np.where(X[col] >= self.upper, self.upper,
+                np.where(
+                    X[col] < self.lower, self.lower, X[col]
+                )    
+            )
+        return X
